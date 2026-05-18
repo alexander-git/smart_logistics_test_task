@@ -67,6 +67,9 @@ class OutboxRelayTest extends TestCase
         ])->id;
 
         // Act
+        /**
+         * @var OutboxRelay $command
+         */
         $command = app(OutboxRelay::class);
         $command->processMessageBatch();
 

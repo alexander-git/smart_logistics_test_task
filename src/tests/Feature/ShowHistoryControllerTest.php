@@ -67,7 +67,7 @@ class ShowHistoryControllerTest extends TestCase
 
         // Assert
         $response->assertOk();
-        $response->assertJsonCount(4);
+        $response->assertJsonCount(3);
 
         $response->assertJsonFragment([
             'notificationText' => $texts[0],

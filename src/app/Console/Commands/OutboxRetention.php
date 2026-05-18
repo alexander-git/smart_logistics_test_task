@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\OutboxMessageStatus;
 use App\Models\OutboxMessage;
-use Carbon\CarbonImmutable;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class OutboxRetention extends Command
@@ -25,7 +25,7 @@ class OutboxRetention extends Command
 
     private function removeOutdatedMessages(): void
     {
-        $deleteAfter = CarbonImmutable::now()->subDays(self::RETENTION_DAYS);
+        $deleteAfter = Carbon::now()->subDays(self::RETENTION_DAYS);
         OutboxMessage::query()
             ->where('status', OutboxMessageStatus::Sent)
             ->where('updated_at', '<', $deleteAfter)
