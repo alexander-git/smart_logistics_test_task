@@ -20,6 +20,7 @@ use App\Services\SmsSender\SmsSenderException;
 use App\Services\SmsSender\SmsSenderInterface;
 use App\Services\SmsSender\SmsSendResult;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -27,6 +28,7 @@ use Throwable;
 class NotificationService
 {
     private const MAX_RETRIES = 3;
+    private const PROCESS_NOTIFICATION_LOCK_SECONDS = 60;
 
     public function __construct(
         private readonly EmailSenderInterface $emailSender,
@@ -95,19 +97,27 @@ class NotificationService
     public function processNotificationForReceiver(int $receiverNotificationId): void
     {
         try {
-            $receiverNotification = ReceiverNotification::query()->where([
-                'id' => $receiverNotificationId,
-                'status' => NotificationProcessStatus::InQueue,
-            ])->first();
+            Cache::lock(
+                $this->getNotificationProcessingLockKey($receiverNotificationId),
+                self::PROCESS_NOTIFICATION_LOCK_SECONDS
+            )->get(function () use ($receiverNotificationId): void {
+                $receiverNotification = ReceiverNotification::query()
+                    ->with(['notification', 'receiver'])
+                    ->where([
+                        'id' => $receiverNotificationId,
+                        'status' => NotificationProcessStatus::InQueue,
+                    ])
+                    ->first();
 
-            if ($receiverNotification === null) {
-                return;
-            }
+                if ($receiverNotification === null) {
+                    return;
+                }
 
-            match ($receiverNotification->notification->channel) {
-                NotificationChannel::Email => $this->sendEmail($receiverNotification),
-                NotificationChannel::Sms => $this->sendSms($receiverNotification),
-            };
+                match ($receiverNotification->notification->channel) {
+                    NotificationChannel::Email => $this->sendEmail($receiverNotification),
+                    NotificationChannel::Sms => $this->sendSms($receiverNotification),
+                };
+            });
         } catch (Throwable $e) {
             // Если в процессе обработки статус ReceiverNotification был изменён на отличный от InQueue, а затем
             // произошло какое-либо непредвиденное исключение(отличное от EmailSenderException и SmsSenderException)
@@ -239,4 +249,10 @@ class NotificationService
             throw $e;
         }
     }
+
+    private function getNotificationProcessingLockKey(int $receiverNotificationId): string
+    {
+        return sprintf('notification:process:%d', $receiverNotificationId);
+    }
+
 }
