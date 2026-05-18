@@ -17,10 +17,13 @@ class StartNotificationDeduplicateMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
+        $receiverIds = $request->input('receiverIds');
+        sort($receiverIds);
+
         $payload = [
             'text' => $request->input('text'),
             'channel' => $request->input('channel'),
-            'receiverIds' => $request->input('receiverIds'),
+            'receiverIds' => $receiverIds,
         ];
 
         if ($this->deduplicateRequestService->isDuplicate($payload)) {
