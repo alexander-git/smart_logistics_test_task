@@ -9,6 +9,7 @@ use App\Enums\NotificationProcessStatus;
 use App\Enums\NotificationType;
 use App\Enums\OutboxEventPriority;
 use App\Enums\OutboxEventType;
+use App\Enums\OutboxMessageStatus;
 use App\Jobs\ProcessNotificationJob;
 use App\Models\HistoryItem;
 use App\Models\Notification;
@@ -108,8 +109,8 @@ class ProcessNotificationJobTest extends TestCase
 
         $this->assertDatabaseHas(self::OUTBOX_TABLE, [
             'event_type' => $expectedEventType->value,
-            'is_sent' => false,
             'priority' => $expectedPriority->value,
+            'status' => OutboxMessageStatus::Pending->value,
         ]);
     }
 
@@ -195,8 +196,8 @@ class ProcessNotificationJobTest extends TestCase
 
         $this->assertDatabaseHas(self::OUTBOX_TABLE, [
             'event_type' => $expectedEventType->value,
-            'is_sent' => false,
             'priority' => $expectedPriority->value,
+            'status' => OutboxMessageStatus::Pending->value,
         ]);
     }
 

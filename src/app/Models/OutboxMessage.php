@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\OutboxEventPriority;
 use App\Enums\OutboxEventType;
+use App\Enums\OutboxMessageStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class OutboxMessage extends Model
@@ -17,11 +18,11 @@ class OutboxMessage extends Model
         'payload',
         'priority',
         'send_after',
-        'is_sent',
+        'status'
     ];
 
     protected $attributes = [
-        'is_sent' => false,
+        'status' => OutboxMessageStatus::Pending,
     ];
 
     protected function casts(): array
@@ -29,6 +30,7 @@ class OutboxMessage extends Model
         return [
             'event_type' => OutboxEventType::class,
             'priority' => OutboxEventPriority::class,
+            'status' => OutboxMessageStatus::class,
             'payload' => 'array',
         ];
     }

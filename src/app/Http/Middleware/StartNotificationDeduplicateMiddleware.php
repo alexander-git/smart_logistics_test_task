@@ -24,7 +24,6 @@ class StartNotificationDeduplicateMiddleware
         ];
 
         if ($this->deduplicateRequestService->isDuplicate($payload)) {
-            # TODO Какой тут лучше статус?
             throw new TooManyRequestsHttpException(message: 'Duplicate request detected.');
         }
 

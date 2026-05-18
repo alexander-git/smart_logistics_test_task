@@ -10,6 +10,7 @@ use App\Enums\NotificationProcessStatus;
 use App\Enums\NotificationType;
 use App\Enums\OutboxEventPriority;
 use App\Enums\OutboxEventType;
+use App\Enums\OutboxMessageStatus;
 use App\Jobs\ProcessNotificationJob;
 use App\Models\HistoryItem;
 use App\Models\Notification;
@@ -62,7 +63,7 @@ class OutboxRelayTest extends TestCase
             ],
             'priority' => $priority,
             'send_after' => Carbon::now()->subSecond(),
-            'is_sent' => false,
+            'status' => OutboxMessageStatus::Pending->value,
         ])->id;
 
         // Act
@@ -74,7 +75,7 @@ class OutboxRelayTest extends TestCase
 
         $this->assertDatabaseHas(self::OUTBOX_TABLE, [
             'id' => $outboxMessageId,
-            'is_sent' => true,
+            'status' => OutboxMessageStatus::Sent->value,
         ]);
     }
 }

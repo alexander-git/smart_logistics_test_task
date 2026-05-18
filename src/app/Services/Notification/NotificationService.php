@@ -113,7 +113,7 @@ class NotificationService
             // произошло какое-либо непредвиденное исключение(отличное от EmailSenderException и SmsSenderException)
             // джоба снова попадёт в очередь. Учитывая как извлекается receiverNotification выше в дальнейшем обработка
             // такой джобы будет заканчиваться сразу и после трех попыток(настройка --tries=3) сообщение
-            // пропадёт из очереди. По хорошему надо настроить его попадание в dead letter queue для дальнейшего анализа.
+            // пропадёт из очереди. В идеале надо настроить его попадание в dead letter queue для дальнейшего анализа.
             Log::error("receiverNotificationId: $receiverNotificationId, message: {$e->getMessage()}");
             throw $e;
         }
@@ -207,9 +207,8 @@ class NotificationService
                     'receiver_notification_id' => $receiverNotification->id,
                 ],
                 'priority' =>  OutboxEventPriority::fromNotificationType($receiverNotification->notification->type),
-                'send_after' => Carbon::now()->modify('+5 minutes'),  //Carbon::now()->modify('+5 seconds')
+                'send_after' => Carbon::now()->modify('+5 minutes'),
             ]);
-
 
             DB::commit();
         } catch (Throwable $e) {

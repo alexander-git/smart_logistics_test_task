@@ -9,6 +9,7 @@ use App\Enums\NotificationProcessStatus;
 use App\Enums\NotificationType;
 use App\Enums\OutboxEventPriority;
 use App\Enums\OutboxEventType;
+use App\Enums\OutboxMessageStatus;
 use App\Models\Notification;
 use App\Models\OutboxMessage;
 use App\Models\ReceiverNotification;
@@ -73,7 +74,7 @@ class StartNotificationControllerTest extends TestCase
         $this->assertDatabaseHas(self::OUTBOX_TABLE, [
             'event_type' => $expectedEventType->value,
             'priority' => $expectedPriority->value,
-            'is_sent' => false,
+            'status' => OutboxMessageStatus::Pending->value,
         ]);
 
         $outbox = OutboxMessage::query()->first();
