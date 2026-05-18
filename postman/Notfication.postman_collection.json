@@ -1,0 +1,177 @@
+{
+  "info": {
+    "_postman_id": "63826261-0195-46ba-99a3-3368b2850b93",
+    "name": "Notfication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "27497500"
+  },
+  "item": [
+    {
+      "name": "Init test data",
+      "protocolProfileBehavior": {
+        "disabledSystemHeaders": {}
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/html",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"text\": \"Транзакционное уведомление\",\r\n    \"channel\": \"email\",\r\n    \"type\": \"transactional\",\r\n    \"receiverIds\": [1]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/api/v1/test/data/init",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "test",
+            "data",
+            "init"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Start notification (marketing)",
+      "protocolProfileBehavior": {
+        "disabledSystemHeaders": {}
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/html",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"text\": \"Маркетинговое уведомление\",\r\n    \"channel\": \"sms\",\r\n    \"type\": \"marketing\",\r\n    \"receiverIds\": [1, 2, 3, 4, 5, 7, 8, 100]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/api/v1/notification/start",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "notification",
+            "start"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Start notification (transactional)",
+      "protocolProfileBehavior": {
+        "disabledSystemHeaders": {}
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/html",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"text\": \"Транзакционное уведомление\",\r\n    \"channel\": \"email\",\r\n    \"type\": \"transactional\",\r\n    \"receiverIds\": [1, 2, 3, 4, 5, 7, 8, 100]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/api/v1/notification/start",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "notification",
+            "start"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Show receiver history",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true,
+        "disabledSystemHeaders": {}
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/html",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/api/v1/receiver/show-history/1",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "receiver",
+            "show-history",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

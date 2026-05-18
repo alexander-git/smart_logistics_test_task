@@ -1,0 +1,96 @@
+services:
+    nginx:
+        image: nginx:1.27.0
+        container_name: nginx
+        working_dir: /var/www/app
+        ports:
+            - "8000:80"
+        volumes:
+            - "./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro"
+            - "./src:/var/www/app"
+        networks:
+            - net
+        depends_on:
+            - php-fpm
+
+    php-fpm:
+        container_name: php-fpm
+        build:
+            context: ./docker/php-fpm
+        working_dir: /var/www/app
+        volumes:
+            - ./src:/var/www/app
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        networks:
+            - net
+
+    php-cli-supervisor:
+        build:
+            context: ./docker/php-cli-supervisor
+        container_name: php-cli-supervisor
+        restart: unless-stopped
+        volumes:
+            - ./src:/var/app
+            - ./docker/php-cli-supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+        working_dir: /var/app
+        command: [ "supervisord", "-c", "/etc/supervisor/supervisord.conf" ]
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        networks:
+            - net
+        depends_on:
+            - postgres
+            - rabbitmq
+
+    postgres:
+        image: postgres:16.2
+        container_name: postgres
+        restart: always
+        working_dir: /app
+        ports:
+            - "54321:5432"
+        environment:
+            POSTGRES_DB: "${POSTGRES_DB}"
+            POSTGRES_USER: "${POSTGRES_USER}"
+            POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+        volumes:
+            - "postgres:/var/lib/postgresql/data"
+            - "postgres-dump:/app/dump"
+        networks:
+            - net
+
+    redis:
+        container_name: redis
+        image: redis:alpine
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis:/data
+        networks:
+            - net
+
+    rabbitmq:
+        image: rabbitmq:3-management
+        working_dir: /app
+        hostname: rabbitmq
+        container_name: rabbitmq
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        environment:
+            RABBITMQ_DEFAULT_USER: "${RABBITMQ_DEFAULT_USER}"
+            RABBITMQ_DEFAULT_PASS: "${RABBITMQ_DEFAULT_PASSWORD}"
+        networks:
+            - net
+
+
+volumes:
+    postgres:
+    postgres-dump:
+    redis:
+
+networks:
+    net:
+        driver: bridge
+
