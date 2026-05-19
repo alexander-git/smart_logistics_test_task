@@ -43,7 +43,7 @@ class ShowHistoryControllerTest extends TestCase
         ];
 
         $i = 0;
-        foreach ($statuses as $index => $status) {
+        foreach ($statuses as $status) {
             $notification = Notification::create([
                 'channel' => $notificationChannel,
                 'type' => $notificationType,

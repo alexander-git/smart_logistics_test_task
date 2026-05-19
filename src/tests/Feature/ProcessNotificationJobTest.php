@@ -219,7 +219,7 @@ class ProcessNotificationJobTest extends TestCase
         $receiverNotification = ReceiverNotification::create([
             'receiver_id' => $receiver->id,
             'notification_id' => $notification->id,
-            'status' => $initialNotificationProcessStatus->value,
+            'status' => $initialNotificationProcessStatus,
         ]);
 
         HistoryItem::create([
