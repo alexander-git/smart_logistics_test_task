@@ -44,14 +44,14 @@ class NotificationService
             $command->receiverIds,
             $command->notificationChannel
         );
+
         $skippedReceiverIds = array_values(array_diff($command->receiverIds, $acceptedReceiverIds));
         $result =  new StartNotificationResult($acceptedReceiverIds, $skippedReceiverIds);
         if ($acceptedReceiverIds === []) {
             return $result;
         }
 
-        DB::beginTransaction();
-        try {
+        return DB::transaction(function () use ($command, $acceptedReceiverIds, $result) {
             $notification = Notification::create([
                 'channel' => $command->notificationChannel,
                 'type' => $command->notificationType,
@@ -76,12 +76,8 @@ class NotificationService
                 );
             }
 
-            DB::commit();
             return $result;
-        } catch (Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -193,8 +189,7 @@ class NotificationService
             return;
         }
 
-        DB::beginTransaction();
-        try {
+        DB::transaction(function () use ($receiverNotification, $retryCount) {
             $receiverNotification->retry_count = $retryCount;
             $receiverNotification->status = NotificationProcessStatus::InQueue;
             $receiverNotification->save();
@@ -209,12 +204,7 @@ class NotificationService
                 $receiverNotification->id,
                 Carbon::now()->modify('+5 minutes'),
             );
-
-            DB::commit();
-        } catch (Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -224,20 +214,15 @@ class NotificationService
         ReceiverNotification $receiverNotification,
         NotificationProcessStatus $newStatus
     ): void {
-        DB::beginTransaction();
-        try {
+        DB::transaction(function () use ($receiverNotification, $newStatus) {
             $receiverNotification->status = $newStatus;
             $receiverNotification->save();
+
             HistoryItem::create([
                 'receiver_notification_id' => $receiverNotification->id,
                 'status' => $newStatus,
             ]);
-
-            DB::commit();
-        } catch (Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     private function getNotificationProcessingLockKey(int $receiverNotificationId): string
