@@ -25,7 +25,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"text\": \"Транзакционное уведомление\",\r\n    \"channel\": \"email\",\r\n    \"type\": \"transactional\",\r\n    \"receiverIds\": [1]\r\n}",
+          "raw": "{}",
           "options": {
             "raw": {
               "language": "json"
@@ -33,7 +33,7 @@
           }
         },
         "url": {
-          "raw": "{{host}}/api/v1/test/data/init",
+          "raw": "{{host}}/api/v1/test/init-data",
           "host": [
             "{{host}}"
           ],
@@ -41,8 +41,48 @@
             "api",
             "v1",
             "test",
-            "data",
-            "init"
+            "init-data"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Init with random test data",
+      "protocolProfileBehavior": {
+        "disabledSystemHeaders": {}
+      },
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/html",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"receiverCount\": 50\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{host}}/api/v1/test/init-with-random-data",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "test",
+            "init-with-random-data"
           ]
         }
       },

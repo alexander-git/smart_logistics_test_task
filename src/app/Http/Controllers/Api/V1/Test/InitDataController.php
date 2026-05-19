@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 
-namespace App\Http\Controllers\Api\V1\Test\InitData;
+namespace App\Http\Controllers\Api\V1\Test;
 
+use App\Http\Resources\Api\V1\ReceiverResource;
 use App\Models\Receiver;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
 class InitDataController
@@ -15,7 +16,7 @@ class InitDataController
     ) {
     }
 
-    public function __invoke(Receiver $receiver): JsonResponse
+    public function __invoke(): AnonymousResourceCollection
     {
         DB::statement('TRUNCATE TABLE outbox RESTART IDENTITY CASCADE');
         DB::statement('TRUNCATE TABLE history RESTART IDENTITY CASCADE');
@@ -23,7 +24,7 @@ class InitDataController
         DB::statement('TRUNCATE TABLE notification RESTART IDENTITY CASCADE');
         DB::statement('TRUNCATE TABLE receiver RESTART IDENTITY CASCADE');
 
-        $receivers = [
+        $receiversAttributes = [
             ['email' => 'user1@example.com', 'phone' => '+1000000000'],
             ['email' => 'user2@example.com', 'phone' => '+2000000000'],
             ['email' => 'user3@example.com', 'phone' => '+3000000000'],
@@ -36,10 +37,11 @@ class InitDataController
             ['email' => 'user10@example.com', 'phone' => '+1000000010'],
         ];
 
-        foreach ($receivers as $data) {
-            Receiver::factory()->create($data);
+        $receivers = [];
+        foreach ($receiversAttributes as $receiverAtributes) {
+            $receivers[] = Receiver::factory()->create($receiverAtributes);
         }
 
-        return response()->json(options: JSON_FORCE_OBJECT);
+        return ReceiverResource::collection($receivers);
     }
 }

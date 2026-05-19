@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\V1\Receiver\ShowHistory;
+namespace App\Http\Controllers\Api\V1\Receiver;
 
 use App\Http\Resources\Api\V1\ReceiverNotificationResource;
 use App\Models\Receiver;

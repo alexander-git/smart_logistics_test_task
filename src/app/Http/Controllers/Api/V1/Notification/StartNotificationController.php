@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\V1\Notification\Start;
+namespace App\Http\Controllers\Api\V1\Notification;
 
 use App\Enums\NotificationChannel;
 use App\Enums\NotificationType;

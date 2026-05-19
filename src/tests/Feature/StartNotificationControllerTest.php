@@ -105,21 +105,30 @@ class StartNotificationControllerTest extends TestCase
     public function testDuplicateRequest(): void
     {
         // Arrange
-        $receiverId = Receiver::factory()->create()->id;
+        $firstReceiverId = Receiver::factory()->create()->id;
+        $secondReceiverId = Receiver::factory()->create()->id;
+
 
         // Act
         $text = 'Маркетинговое уведомление';
         $notificationChannel = NotificationChannel::Sms;
         $notificationType = NotificationType::Marketing;
-        $payload = [
+        $firstPayload = [
             'text' => $text,
             'channel' => $notificationChannel->value,
             'type' => $notificationType->value,
-            'receiverIds' => [$receiverId],
+            'receiverIds' => [$firstReceiverId, $secondReceiverId],
         ];
 
-        $this->post(self::ROUTE, $payload);
-        $response = $this->post(self::ROUTE, $payload);
+        $secondPayload = [
+            'text' => $text,
+            'channel' => $notificationChannel->value,
+            'type' => $notificationType->value,
+            'receiverIds' => [$secondReceiverId, $firstReceiverId],
+        ];
+
+        $this->post(self::ROUTE, $firstPayload);
+        $response = $this->post(self::ROUTE, $secondPayload);
 
         // Assert
         $response->assertStatus(429);
