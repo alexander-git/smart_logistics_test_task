@@ -14,10 +14,11 @@ use Throwable;
 
 class ReceiverNotificationService
 {
-    private const MAX_RETRIES = 3;
-
-    public function __construct(private readonly OutboxService $outboxService)
-    {
+    public function __construct(
+        private readonly OutboxService $outboxService,
+        private readonly int $maxRetries,
+        private readonly int $retryAfterMinutes,
+    ) {
     }
 
     public function create(int $receiverId, int $notificationId): ReceiverNotification
@@ -60,7 +61,7 @@ class ReceiverNotificationService
     public function markToRetryOrDiscard(ReceiverNotification $receiverNotification): void
     {
         $retryCount = $receiverNotification->retry_count + 1;
-        if ($retryCount > self::MAX_RETRIES) {
+        if ($retryCount > $this->maxRetries) {
             $this->changeStatus($receiverNotification, NotificationProcessStatus::Discarded);
             return;
         }
@@ -78,7 +79,7 @@ class ReceiverNotificationService
             $this->outboxService->createSendNotificationMessage(
                 $receiverNotification->notification->type,
                 $receiverNotification->id,
-                Carbon::now()->modify('+5 minutes'),
+                Carbon::now()->modify("+{$this->retryAfterMinutes} minutes"),
             );
         });
     }

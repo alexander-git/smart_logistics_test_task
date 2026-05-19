@@ -9,6 +9,7 @@ use App\Services\EmailSender\FakeEmailSender;
 use App\Services\Notification\Processor\EmailProcessor;
 use App\Services\Notification\Processor\NotificationChannelProcessorRegistry;
 use App\Services\Notification\Processor\SmsProcessor;
+use App\Services\ReceiverNotification\ReceiverNotificationService;
 use App\Services\SmsSender\FakeSmsSender;
 use App\Services\SmsSender\SmsSenderInterface;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -23,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(EmailSenderInterface::class, FakeEmailSender::class);
         $this->app->bind(SmsSenderInterface::class, FakeSmsSender::class);
         $this->app->bind(DeduplicateRequestServiceInterface::class, DeduplicationRequestService::class);
+
+        $this->app->when(ReceiverNotificationService::class)
+            ->needs('$maxRetries')
+            ->giveConfig('notification.max_retries')
+            ->needs('$retryAfterMinutes')
+            ->giveConfig('notification.retry_after_minutes');
 
         $this->app->singleton(NotificationChannelProcessorRegistry::class, function ($app) {
             return new NotificationChannelProcessorRegistry([

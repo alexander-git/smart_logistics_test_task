@@ -16,8 +16,7 @@ class DeduplicationRequestService implements DeduplicateRequestServiceInterface
 
     public function isDuplicate(array $data): bool
     {
-        $key = $this->generateKey($data);
-        return !Cache::add($key, 1, self::TTL);
+        return !Cache::add($this->generateKey($data), 1, self::TTL);
     }
     private function generateKey(array $data): string
     {

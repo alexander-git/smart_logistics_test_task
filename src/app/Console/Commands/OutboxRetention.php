@@ -13,8 +13,6 @@ class OutboxRetention extends Command
 
     protected $description = 'Outbox retention';
 
-    private const RETENTION_DAYS = 7;
-
     public function __construct(private readonly OutboxService $outboxService)
     {
         parent::__construct();
@@ -22,7 +20,7 @@ class OutboxRetention extends Command
 
     public function handle(): int
     {
-        $this->outboxService->deleteOutdatedMessages(self::RETENTION_DAYS);
+        $this->outboxService->deleteOutdatedMessages(config('outbox.retention_days'));
         return self::SUCCESS;
     }
 }
