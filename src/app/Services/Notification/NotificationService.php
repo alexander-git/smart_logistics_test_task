@@ -4,20 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Notification;
 
-use App\Enums\NotificationChannel;
 use App\Enums\NotificationProcessStatus;
-use App\Models\HistoryItem;
 use App\Models\Notification;
 use App\Models\Receiver;
 use App\Models\ReceiverNotification;
-use App\Services\EmailSender\EmailSenderException;
-use App\Services\EmailSender\EmailSenderInterface;
-use App\Services\EmailSender\EmailSendResult;
+use App\Services\Notification\Processor\NotificationChannelProcessorRegistry;
 use App\Services\Outbox\OutboxService;
-use App\Services\SmsSender\SmsSenderException;
-use App\Services\SmsSender\SmsSenderInterface;
-use App\Services\SmsSender\SmsSendResult;
-use Carbon\Carbon;
+use App\Services\ReceiverNotification\ReceiverNotificationService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,13 +18,12 @@ use Throwable;
 
 class NotificationService
 {
-    private const MAX_RETRIES = 3;
     private const PROCESS_NOTIFICATION_LOCK_SECONDS = 60;
 
     public function __construct(
-        private readonly EmailSenderInterface $emailSender,
-        private readonly SmsSenderInterface $smsSender,
         private readonly OutboxService $outboxService,
+        private readonly ReceiverNotificationService $receiverNotificationService,
+        private readonly NotificationChannelProcessorRegistry $notificationChannelProcessorRegistry,
     ) {
     }
 
@@ -59,16 +51,10 @@ class NotificationService
             ]);
 
             foreach ($acceptedReceiverIds as $receiverId) {
-                $receiverNotification = ReceiverNotification::create([
-                    'receiver_id' => $receiverId,
-                    'notification_id' => $notification->id,
-                    'status' => NotificationProcessStatus::InQueue,
-                ]);
-
-                HistoryItem::create([
-                    'receiver_notification_id' => $receiverNotification->id,
-                    'status' => NotificationProcessStatus::InQueue,
-                ]);
+                $receiverNotification = $this->receiverNotificationService->create(
+                    $receiverId,
+                    $notification->id,
+                );
 
                 $this->outboxService->createSendNotificationMessage(
                     $command->notificationType,
@@ -102,10 +88,8 @@ class NotificationService
                     return;
                 }
 
-                match ($receiverNotification->notification->channel) {
-                    NotificationChannel::Email => $this->sendEmail($receiverNotification),
-                    NotificationChannel::Sms => $this->sendSms($receiverNotification),
-                };
+                $this->notificationChannelProcessorRegistry->get($receiverNotification->notification->channel)
+                    ->process($receiverNotification);
             });
         } catch (Throwable $e) {
             // Если в процессе обработки статус ReceiverNotification был изменён на отличный от InQueue, а затем
@@ -118,116 +102,8 @@ class NotificationService
         }
     }
 
-    private function sendEmail(ReceiverNotification $receiverNotification): void
-    {
-        $this->changeReceiverNotificationStatus($receiverNotification, NotificationProcessStatus::Sent);
-        $notification = $receiverNotification->notification;
-        $text = $notification->text;
-        $subject = mb_substr($text, 0, 30);
-        try {
-            $emailSendResult = $this->emailSender->sendEmail($receiverNotification->receiver->email , $subject, $text);
-        } catch (EmailSenderException) {
-            $this->markToRetryOrDiscard($receiverNotification);
-            return;
-        }
-
-        match ($emailSendResult) {
-            EmailSendResult::Success =>
-                $this->changeReceiverNotificationStatus(
-                    $receiverNotification,
-                    NotificationProcessStatus::Delivered
-                ),
-            EmailSendResult::NotCorrectEmail =>
-                $this->changeReceiverNotificationStatus(
-                    $receiverNotification,
-                    NotificationProcessStatus::Discarded
-                ),
-            EmailSendResult::TemporaryUnavailable =>
-                $this->markToRetryOrDiscard($receiverNotification),
-        };
-    }
-
-    private function sendSms(ReceiverNotification $receiverNotification): void
-    {
-        $this->changeReceiverNotificationStatus($receiverNotification, NotificationProcessStatus::Sent);
-
-        try {
-            $smsSendResult = $this->smsSender->sendSms(
-                $receiverNotification->receiver->phone,
-                $receiverNotification->notification->text
-            );
-        } catch (SmsSenderException) {
-            $this->markToRetryOrDiscard($receiverNotification);
-            return;
-        }
-
-        match ($smsSendResult) {
-            SmsSendResult::Success =>
-                $this->changeReceiverNotificationStatus(
-                    $receiverNotification,
-                    NotificationProcessStatus::Delivered
-                ),
-            SmsSendResult::NotCorrectPhone =>
-                $this->changeReceiverNotificationStatus(
-                    $receiverNotification,
-                    NotificationProcessStatus::Discarded
-                ),
-            SmsSendResult::TemporaryUnavailable =>
-                $this->markToRetryOrDiscard($receiverNotification),
-        };
-    }
-
-    /**
-     * @throws Throwable
-     */
-    private function markToRetryOrDiscard(ReceiverNotification $receiverNotification): void
-    {
-
-        $retryCount = $receiverNotification->retry_count + 1;
-        if ($retryCount > self::MAX_RETRIES) {
-            $this->changeReceiverNotificationStatus($receiverNotification, NotificationProcessStatus::Discarded);
-            return;
-        }
-
-        DB::transaction(function () use ($receiverNotification, $retryCount) {
-            $receiverNotification->retry_count = $retryCount;
-            $receiverNotification->status = NotificationProcessStatus::InQueue;
-            $receiverNotification->save();
-
-            HistoryItem::create([
-                'receiver_notification_id' => $receiverNotification->id,
-                'status' => NotificationProcessStatus::InQueue,
-            ]);
-
-            $this->outboxService->createSendNotificationMessage(
-                $receiverNotification->notification->type,
-                $receiverNotification->id,
-                Carbon::now()->modify('+5 minutes'),
-            );
-        });
-    }
-
-    /**
-     * @throws Throwable
-     */
-    private function changeReceiverNotificationStatus(
-        ReceiverNotification $receiverNotification,
-        NotificationProcessStatus $newStatus
-    ): void {
-        DB::transaction(function () use ($receiverNotification, $newStatus) {
-            $receiverNotification->status = $newStatus;
-            $receiverNotification->save();
-
-            HistoryItem::create([
-                'receiver_notification_id' => $receiverNotification->id,
-                'status' => $newStatus,
-            ]);
-        });
-    }
-
     private function getNotificationProcessingLockKey(int $receiverNotificationId): string
     {
         return sprintf('notification:process:%d', $receiverNotificationId);
     }
-
 }

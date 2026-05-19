@@ -22,7 +22,6 @@ class StartNotificationControllerTest extends TestCase
     use RefreshDatabase;
     private const ROUTE = '/api/v1/notification/start';
 
-
     public function testStartNotificationSuccess(): void
     {
         // Arrange

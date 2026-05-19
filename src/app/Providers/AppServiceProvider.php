@@ -6,6 +6,9 @@ use App\Services\DeduplicationRequest\DeduplicateRequestServiceInterface;
 use App\Services\DeduplicationRequest\DeduplicationRequestService;
 use App\Services\EmailSender\EmailSenderInterface;
 use App\Services\EmailSender\FakeEmailSender;
+use App\Services\Notification\Processor\EmailProcessor;
+use App\Services\Notification\Processor\NotificationChannelProcessorRegistry;
+use App\Services\Notification\Processor\SmsProcessor;
 use App\Services\SmsSender\FakeSmsSender;
 use App\Services\SmsSender\SmsSenderInterface;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -20,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(EmailSenderInterface::class, FakeEmailSender::class);
         $this->app->bind(SmsSenderInterface::class, FakeSmsSender::class);
         $this->app->bind(DeduplicateRequestServiceInterface::class, DeduplicationRequestService::class);
+
+        $this->app->singleton(NotificationChannelProcessorRegistry::class, function ($app) {
+            return new NotificationChannelProcessorRegistry([
+                $app->make(EmailProcessor::class),
+                $app->make(SmsProcessor::class),
+            ]);
+        });
     }
 
     public function boot(): void
