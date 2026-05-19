@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\OutboxMessageStatus;
-use App\Models\OutboxMessage;
-use Carbon\Carbon;
+use App\Services\Outbox\OutboxService;
 use Illuminate\Console\Command;
 
 class OutboxRetention extends Command
@@ -17,18 +15,14 @@ class OutboxRetention extends Command
 
     private const RETENTION_DAYS = 7;
 
-    public function handle(): int
+    public function __construct(private readonly OutboxService $outboxService)
     {
-        $this->removeOutdatedMessages();
-        return self::SUCCESS;
+        parent::__construct();
     }
 
-    private function removeOutdatedMessages(): void
+    public function handle(): int
     {
-        $deleteAfter = Carbon::now()->subDays(self::RETENTION_DAYS);
-        OutboxMessage::query()
-            ->where('status', OutboxMessageStatus::Sent)
-            ->where('updated_at', '<', $deleteAfter)
-            ->delete();
+        $this->outboxService->deleteOutdatedMessages(self::RETENTION_DAYS);
+        return self::SUCCESS;
     }
 }

@@ -6,16 +6,14 @@ namespace App\Services\Notification;
 
 use App\Enums\NotificationChannel;
 use App\Enums\NotificationProcessStatus;
-use App\Enums\OutboxEventPriority;
-use App\Enums\OutboxEventType;
 use App\Models\HistoryItem;
 use App\Models\Notification;
-use App\Models\OutboxMessage;
 use App\Models\Receiver;
 use App\Models\ReceiverNotification;
 use App\Services\EmailSender\EmailSenderException;
 use App\Services\EmailSender\EmailSenderInterface;
 use App\Services\EmailSender\EmailSendResult;
+use App\Services\Outbox\OutboxService;
 use App\Services\SmsSender\SmsSenderException;
 use App\Services\SmsSender\SmsSenderInterface;
 use App\Services\SmsSender\SmsSendResult;
@@ -33,6 +31,7 @@ class NotificationService
     public function __construct(
         private readonly EmailSenderInterface $emailSender,
         private readonly SmsSenderInterface $smsSender,
+        private readonly OutboxService $outboxService,
     ) {
     }
 
@@ -51,8 +50,6 @@ class NotificationService
             return $result;
         }
 
-        $now = Carbon::now();
-        $priority = OutboxEventPriority::fromNotificationType($command->notificationType);
         DB::beginTransaction();
         try {
             $notification = Notification::create([
@@ -73,14 +70,10 @@ class NotificationService
                     'status' => NotificationProcessStatus::InQueue,
                 ]);
 
-                OutboxMessage::create([
-                    'event_type' => OutboxEventType::SendNotification,
-                    'payload' => [
-                        'receiver_notification_id' => $receiverNotification->id,
-                    ],
-                    'priority' =>  $priority,
-                    'send_after' => $now,
-                ]);
+                $this->outboxService->createSendNotificationMessage(
+                    $command->notificationType,
+                    $receiverNotification->id
+                );
             }
 
             DB::commit();
@@ -211,14 +204,11 @@ class NotificationService
                 'status' => NotificationProcessStatus::InQueue,
             ]);
 
-            OutboxMessage::create([
-                'event_type' => OutboxEventType::SendNotification,
-                'payload' => [
-                    'receiver_notification_id' => $receiverNotification->id,
-                ],
-                'priority' =>  OutboxEventPriority::fromNotificationType($receiverNotification->notification->type),
-                'send_after' => Carbon::now()->modify('+5 minutes'),
-            ]);
+            $this->outboxService->createSendNotificationMessage(
+                $receiverNotification->notification->type,
+                $receiverNotification->id,
+                Carbon::now()->modify('+5 minutes'),
+            );
 
             DB::commit();
         } catch (Throwable $e) {
