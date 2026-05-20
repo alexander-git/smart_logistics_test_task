@@ -21,9 +21,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(EmailSenderInterface::class, FakeEmailSender::class);
-        $this->app->bind(SmsSenderInterface::class, FakeSmsSender::class);
-        $this->app->bind(DeduplicateRequestServiceInterface::class, DeduplicationRequestService::class);
+        $this->app->singleton(EmailSenderInterface::class, FakeEmailSender::class);
+        $this->app->singleton(SmsSenderInterface::class, FakeSmsSender::class);
+        $this->app->singleton(DeduplicateRequestServiceInterface::class, DeduplicationRequestService::class);
 
         $this->app->when(ReceiverNotificationService::class)
             ->needs('$maxRetries')
