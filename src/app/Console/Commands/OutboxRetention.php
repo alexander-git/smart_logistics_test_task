@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Services\Outbox\OutboxService;
 use Illuminate\Console\Command;
+use Illuminate\Container\Attributes\Config;
 
 class OutboxRetention extends Command
 {
@@ -13,14 +14,17 @@ class OutboxRetention extends Command
 
     protected $description = 'Outbox retention';
 
-    public function __construct(private readonly OutboxService $outboxService)
-    {
+    public function __construct(
+        private readonly OutboxService $outboxService,
+        #[Config('outbox.retention_days')]
+        private readonly int $retentionDays,
+    ) {
         parent::__construct();
     }
 
     public function handle(): int
     {
-        $this->outboxService->deleteOutdatedMessages(config('outbox.retention_days'));
+        $this->outboxService->deleteOutdatedMessages($this->retentionDays);
         return self::SUCCESS;
     }
 }

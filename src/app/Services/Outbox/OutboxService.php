@@ -11,8 +11,10 @@ use App\Enums\OutboxMessageStatus;
 use App\Models\OutboxMessage;
 use Carbon\Carbon;
 use DateTimeInterface;
+use Illuminate\Container\Attributes\Singleton;
 use Illuminate\Support\Facades\DB;
 
+#[Singleton]
 class OutboxService
 {
     public function createSendNotificationMessage(

@@ -2,8 +2,11 @@ init:
 	cp .env.example .env
 	cp ./src/.env.example ./src/.env
 	docker-compose up -d
-	sleep 2
-	docker exec -it php-fpm sh -c "php artisan migrate"
+	docker-compose exec php-fpm sh -c '\
+		until php artisan migrate --pretend >/dev/null 2>&1; do \
+			sleep 0.5; \
+		done; \
+		php artisan migrate'
 
 up:
 	docker-compose up -d
@@ -30,7 +33,7 @@ restart-php-cli-supervisor:
 	docker-compose restart php-cli-supervisor
 
 migrate:
-	docker exec -it php-fpm sh -c "php artisan migrate"
+	docker exec -t php-fpm  sh -c "php artisan migrate"
 
 test:
-	docker exec -it php-fpm sh -c "php artisan test"
+	docker exec -t php-fpm sh -c "php artisan test"

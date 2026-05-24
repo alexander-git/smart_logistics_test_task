@@ -37,7 +37,7 @@ class Receiver extends Model
             NotificationChannel::Sms => 'phone',
         };
 
-        return self::whereIn('id', $receiverIds)
+        return self::query()->whereIn('id', $receiverIds)
             ->whereNotNull($field)
             ->pluck('id')
             ->toArray();

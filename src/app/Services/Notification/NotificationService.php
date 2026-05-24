@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Notification;
 
-use App\Enums\NotificationProcessStatus;
 use App\Models\Notification;
 use App\Models\Receiver;
-use App\Models\ReceiverNotification;
-use App\Services\Notification\Processor\NotificationChannelProcessorRegistry;
+use App\Services\ReceiverNotification\Processor\NotificationChannelProcessorRegistry;
 use App\Services\Outbox\OutboxService;
 use App\Services\ReceiverNotification\ReceiverNotificationService;
 use Illuminate\Support\Facades\Cache;
@@ -76,14 +74,7 @@ class NotificationService
                 $this->getNotificationProcessingLockKey($receiverNotificationId),
                 self::PROCESS_NOTIFICATION_LOCK_SECONDS
             )->get(function () use ($receiverNotificationId): void {
-                $receiverNotification = ReceiverNotification::query()
-                    ->with(['notification', 'receiver'])
-                    ->where([
-                        'id' => $receiverNotificationId,
-                        'status' => NotificationProcessStatus::InQueue,
-                    ])
-                    ->first();
-
+                $receiverNotification = $this->receiverNotificationService->getForProcess($receiverNotificationId);
                 if ($receiverNotification === null) {
                     return;
                 }

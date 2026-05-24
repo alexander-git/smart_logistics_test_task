@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notification\Processor;
+namespace App\Services\ReceiverNotification\Processor;
 
 use App\Enums\NotificationChannel;
 use RuntimeException;

@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Notification\Processor;
+namespace App\Services\ReceiverNotification\Processor;
 
 use App\Enums\NotificationChannel;
 use App\Enums\NotificationProcessStatus;
 use App\Models\ReceiverNotification;
+use App\Services\EmailSender\EmailSenderException;
+use App\Services\EmailSender\EmailSenderInterface;
+use App\Services\EmailSender\EmailSendResult;
 use App\Services\ReceiverNotification\ReceiverNotificationService;
-use App\Services\SmsSender\SmsSenderException;
-use App\Services\SmsSender\SmsSenderInterface;
-use App\Services\SmsSender\SmsSendResult;
 
-class SmsProcessor implements NotificationChannelProcessorInterface
+class EmailProcessor implements NotificationChannelProcessorInterface
 {
     public function __construct(
-        private readonly SmsSenderInterface $smsSender,
+        private readonly EmailSenderInterface $emailSender,
         private readonly ReceiverNotificationService $receiverNotificationService,
     ) {}
 
     public function supports(NotificationChannel $channel): bool
     {
-        return $channel === NotificationChannel::Sms;
+        return $channel === NotificationChannel::Email;
     }
 
     public function process(ReceiverNotification $receiverNotification): void
@@ -31,28 +31,28 @@ class SmsProcessor implements NotificationChannelProcessorInterface
             NotificationProcessStatus::Sent
         );
 
+        $notification = $receiverNotification->notification;
+        $text = $notification->text;
+        $subject = mb_substr($text, 0, 30);
         try {
-            $smsSendResult = $this->smsSender->sendSms(
-                $receiverNotification->receiver->phone,
-                $receiverNotification->notification->text
-            );
-        } catch (SmsSenderException) {
+            $emailSendResult = $this->emailSender->sendEmail($receiverNotification->receiver->email , $subject, $text);
+        } catch (EmailSenderException) {
             $this->receiverNotificationService->markToRetryOrDiscard($receiverNotification);
             return;
         }
 
-        match ($smsSendResult) {
-            SmsSendResult::Success =>
+        match ($emailSendResult) {
+            EmailSendResult::Success =>
                 $this->receiverNotificationService->changeStatus(
                     $receiverNotification,
                     NotificationProcessStatus::Delivered
                 ),
-            SmsSendResult::NotCorrectPhone =>
+            EmailSendResult::NotCorrectEmail =>
                 $this->receiverNotificationService->changeStatus(
                     $receiverNotification,
                     NotificationProcessStatus::Discarded
                 ),
-            SmsSendResult::TemporaryUnavailable =>
+            EmailSendResult::TemporaryUnavailable =>
                 $this->receiverNotificationService->markToRetryOrDiscard($receiverNotification),
         };
     }

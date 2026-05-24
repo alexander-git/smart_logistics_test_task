@@ -9,14 +9,19 @@ use App\Models\HistoryItem;
 use App\Models\ReceiverNotification;
 use App\Services\Outbox\OutboxService;
 use Carbon\Carbon;
+use Illuminate\Container\Attributes\Config;
+use Illuminate\Container\Attributes\Singleton;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+#[Singleton]
 class ReceiverNotificationService
 {
     public function __construct(
         private readonly OutboxService $outboxService,
+        #[Config('notification.max_retries')]
         private readonly int $maxRetries,
+        #[Config('notification.retry_after_minutes')]
         private readonly int $retryAfterMinutes,
     ) {
     }
@@ -35,6 +40,17 @@ class ReceiverNotificationService
         ]);
 
         return $receiverNotification;
+    }
+
+    public function getForProcess(int $receiverNotificationId): ?ReceiverNotification
+    {
+        return ReceiverNotification::query()
+            ->with(['notification', 'receiver'])
+            ->where([
+                'id' => $receiverNotificationId,
+                'status' => NotificationProcessStatus::InQueue,
+            ])
+            ->first();
     }
 
     /**

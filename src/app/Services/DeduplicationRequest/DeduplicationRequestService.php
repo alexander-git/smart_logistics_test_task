@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\DeduplicationRequest;
 
+use Illuminate\Container\Attributes\Singleton;
 use Illuminate\Support\Facades\Cache;
 
+#[Singleton]
 class DeduplicationRequestService implements DeduplicateRequestServiceInterface
 {
     private const TTL = 300;

@@ -6,9 +6,9 @@ use App\Services\DeduplicationRequest\DeduplicateRequestServiceInterface;
 use App\Services\DeduplicationRequest\DeduplicationRequestService;
 use App\Services\EmailSender\EmailSenderInterface;
 use App\Services\EmailSender\FakeEmailSender;
-use App\Services\Notification\Processor\EmailProcessor;
-use App\Services\Notification\Processor\NotificationChannelProcessorRegistry;
-use App\Services\Notification\Processor\SmsProcessor;
+use App\Services\ReceiverNotification\Processor\EmailProcessor;
+use App\Services\ReceiverNotification\Processor\NotificationChannelProcessorRegistry;
+use App\Services\ReceiverNotification\Processor\SmsProcessor;
 use App\Services\ReceiverNotification\ReceiverNotificationService;
 use App\Services\SmsSender\FakeSmsSender;
 use App\Services\SmsSender\SmsSenderInterface;
@@ -24,12 +24,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(EmailSenderInterface::class, FakeEmailSender::class);
         $this->app->singleton(SmsSenderInterface::class, FakeSmsSender::class);
         $this->app->singleton(DeduplicateRequestServiceInterface::class, DeduplicationRequestService::class);
-
-        $this->app->when(ReceiverNotificationService::class)
-            ->needs('$maxRetries')
-            ->giveConfig('notification.max_retries')
-            ->needs('$retryAfterMinutes')
-            ->giveConfig('notification.retry_after_minutes');
 
         $this->app->singleton(NotificationChannelProcessorRegistry::class, function ($app) {
             return new NotificationChannelProcessorRegistry([

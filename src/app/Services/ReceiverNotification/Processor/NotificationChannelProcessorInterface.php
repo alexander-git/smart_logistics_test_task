@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Notification\Processor;
+namespace App\Services\ReceiverNotification\Processor;
 
 use App\Enums\NotificationChannel;
 use App\Models\ReceiverNotification;
